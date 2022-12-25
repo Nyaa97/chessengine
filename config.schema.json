@@ -1,0 +1,41 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema",
+	"type": "object",
+	"properties": {
+		"colour": {
+			"description": "The current player's colour",
+			"title": "Colour",
+			"type": "string",
+			"pattern": "^[wb]$"
+		},
+		"castling": {
+			"description": "State of castling",
+			"title": "Castling",
+			"type": "object",
+			"properties": {
+				"wk": { "type": "boolean" },
+				"wq": { "type": "boolean" },
+				"bk": { "type": "boolean" },
+				"bq": { "type": "boolean" }
+			},
+			"required": ["wk", "wq", "bk", "bq"]
+		},
+		"arr": {
+			"description": "Arrangement of figures board",
+			"title": "Board",
+			"type": "array",
+			"items": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"pattern": "^[bBkKnNpPqQrR ]$"
+				},
+				"maxItems": 8,
+				"minItems": 8
+			},
+			"maxItems": 8,
+			"minItems": 8
+		}
+	},
+	"required": ["colour", "castling", "arr"]
+}

@@ -176,10 +176,10 @@ impl<'a> Graph<'a> {
 
 		if candidates.len() > 1 {
 			if self.board.colour == Colour::White {
-				Graph::subpredict(Colour::Black, limit, candidates, figures, lookup).unwrap()
+				Graph::subpredict(Colour::Black, Colour::White, limit, candidates, figures, lookup).unwrap()
 			}
 			else {
-				Graph::subpredict(Colour::White, limit, candidates, figures, lookup).unwrap()
+				Graph::subpredict(Colour::White, Colour::Black, limit, candidates, figures, lookup).unwrap()
 			}
 		}
 		else if !candidates.is_empty() {
@@ -192,6 +192,7 @@ impl<'a> Graph<'a> {
 
 	fn subpredict(
 		colour: Colour,
+		colour_org: Colour,
 		limit: usize,
 		candidates: Vec<(((usize, usize), (usize, usize)), Graph)>,
 		figures: &HashMap<&str, Option<&Piece>>,
@@ -209,8 +210,8 @@ impl<'a> Graph<'a> {
 		let mut options = Vec::new();
 
 		if colour == Colour::White {
-			let mut val = -10000;
 			for (mv, next) in candidates {
+				let mut val = -10000;
 				pb.inc(1);
 				let mut subcandidates = Vec::new();
 				for (_, subgraph) in next.alphabeta(limit, -10000, 10000, lookup) {
@@ -250,8 +251,8 @@ impl<'a> Graph<'a> {
 			}
 		}
 		else {
-			let mut val = 10000;
 			for (mv, next) in candidates {
+				let mut val = 10000;
 				pb.inc(1);
 				let mut subcandidates = Vec::new();
 				for (_, subgraph) in next.alphabeta(limit, -10000, 10000, lookup) {
@@ -294,26 +295,66 @@ impl<'a> Graph<'a> {
 		pb.finish_and_clear();
 
 		let mut subcandidates = Vec::new();
-		let target;
+		let mut target = 0;
 		let mut leftoption = 0;
 		let mut lastoption = ((0, 0), (0, 0));
+		let mut options2 = Vec::new();
 
-		options.sort_by_key(|f| f.1);
 		if colour == Colour::White {
-			target = options[0].1;
+			let mut tmp_vec = Vec::new();
+			for x in &options {
+				if lastoption != x.0 {
+					lastoption = x.0;
+					target = x.1;
+					if !tmp_vec.is_empty() {
+						options2.append(&mut tmp_vec);
+						tmp_vec.clear();
+					}
+				}
+				if target < x.1 {
+					tmp_vec.clear()
+				}
+				if target <= x.1 {
+					tmp_vec.push(x);
+				}
+			}
 		}
 		else {
-			target = options.last().unwrap().1;
+			let mut tmp_vec = Vec::new();
+			for x in &options {
+				if lastoption != x.0 {
+					lastoption = x.0;
+					target = x.1;
+					if !tmp_vec.is_empty() {
+						options2.append(&mut tmp_vec);
+						tmp_vec.clear();
+					}
+				}
+				if target > x.1 {
+					tmp_vec.clear()
+				}
+				if target >= x.1 {
+					tmp_vec.push(x);
+				}
+			}
 		}
 
-		for option in options {
+		options2.sort_by_key(|f| f.1);
+		if colour_org == Colour::White {
+			target = options2.last().unwrap().1;
+		}
+		else {
+			target = options2[0].1;
+		}
+
+		for option in options2 {
 			if option.1 == target {
 				if option.0 != lastoption {
 					leftoption += 1;
 					lastoption = option.0;
 				}
-				for x in option.2 {
-					subcandidates.push(x);
+				for x in 0..option.2.len() {
+					subcandidates.push(option.2[x].clone());
 				}
 			}
 		}
@@ -324,10 +365,10 @@ impl<'a> Graph<'a> {
 				return Some((target, subcandidates[0].0));
 			}
 			if colour == Colour::Black {
-				Graph::subpredict(Colour::White, limit, subcandidates, figures, lookup)
+				Graph::subpredict(Colour::White, colour_org, limit, subcandidates, figures, lookup)
 			}
 			else {
-				Graph::subpredict(Colour::Black, limit, subcandidates, figures, lookup)
+				Graph::subpredict(Colour::Black, colour_org, limit, subcandidates, figures, lookup)
 			}
 		}
 		else if !subcandidates.is_empty() {
